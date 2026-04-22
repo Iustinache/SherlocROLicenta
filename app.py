@@ -223,12 +223,24 @@ def curatare_text_spacy(text):
 
 
 # --- INTERFAȚA WEB ---
+
+@st.dialog("🔎 Despre Șerloc Ro")
+def afiseaza_despre():
+    st.write("Acest proiect folosește Inteligența Artificială pentru a filtra informația din mediul online românesc, analizând tiparele specifice dezinformării.")
+    st.divider()
+    st.warning("**⚠️ Limitările Modelului**\n\nAplicația evaluează **stilul lingvistic** (senzaționalism, structura vocabularului) și nu **veridicitatea absolută a faptelor**.")
+
 st.title("🕵️‍♂️ Șerloc RO")
+
+if st.button("ℹ️ Despre aplicație și limitări", type="tertiary"):
+    afiseaza_despre()
 
 st.markdown(
     "**Aplicație demonstrativă pentru lucrarea de licență.** Sistemul folosește un model de Machine Learning (Logistic Regression) antrenat pe articole de presă din România.")
 
-text_input = st.text_area("Lipește aici textul știrii pe care vrei să o verifici:", height=250)
+text_input = st.text_area("Verifică știrea:",
+                          placeholder="Lipește aici textul articolului pe care vrei să îl analizezi...",
+                          height=250)
 
 if st.button("Analizează Textul", type="primary"):
     if len(text_input.strip()) < 50:
@@ -337,3 +349,4 @@ if st.button("Analizează Textul", type="primary"):
                     st.altair_chart(grafic, use_container_width=True)
                 else:
                     st.info("Modelul nu a găsit cuvinte cheie specifice în acest text scurt.")
+
