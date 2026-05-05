@@ -197,10 +197,10 @@ def incarca_resurse():
         "declara", "face", "putea", "trebui", "potrivit", "conform", "foto", "video",
         "sursa", "citeste", "articol", "aici", "abonare", "newsletter", "parlament",
         "guvern", "presedinte", "președinte", "premier", "alegeri", "alegere", "electoral",
-        "partid", "dan", "iohannis", "simion", "ciolacu", "georgescu", "lasconi", "bolojan",
+        "partid", "dan", "iohannis", "simion", "ciolacu", "georgescu", "lasconi","bolojan",
         "trump", "rusia", "ucraina", "moldova", "război", "militar", "european",
         "călin", "nicu", "nicușor", "george","georgescu", "aur", "acest", "aceasta", "aceste", "acel",
-        "acces", "foarte", "mai", "mult", "doar", "e", "s", "lui", "unei", "unui", "într", "ie"
+        "acces", "foarte", "mai", "mult", "doar", "e", "s", "lui", "unei", "unui", "într", "ie", "zelenski", "ucraina", "rusia", "românia"
     }
     stop_words_ro = stop_words_ro.union(custom_stop_words)
 
@@ -218,7 +218,12 @@ def curatare_text_spacy(text):
     text = str(text).lower()
     text = re.sub(r'[^a-zăâîșțşţ]+', ' ', text)
     doc = nlp(text)
-    cuvinte_curate = [token.lemma_ for token in doc if token.text not in stop_words_ro and not token.is_space]
+    cuvinte_curate = [
+        token.lemma_ for token in doc
+        if token.text not in stop_words_ro
+        and token.lemma_ not in stop_words_ro
+        and not token.is_space
+    ]
     return ' '.join(cuvinte_curate)
 
 
@@ -346,7 +351,7 @@ if st.button("Analizează Textul", type="primary"):
                         tooltip=['Cuvânt', 'Impact', 'Direcție']
                     ).properties(height=350)
 
-                    st.altair_chart(grafic, use_container_width=True)
+                    st.altair_chart(grafic, width="stretch")
                 else:
                     st.info("Modelul nu a găsit cuvinte cheie specifice în acest text scurt.")
 
