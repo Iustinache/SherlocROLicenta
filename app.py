@@ -260,7 +260,7 @@ def curatare_text_spacy(text):
 
 @st.dialog("🔎 Despre Șerloc Ro")
 def afiseaza_despre():
-    st.write("Acest proiect folosește Inteligența Artificială pentru a filtra informația din mediul online românesc, analizând tiparele specifice dezinformării.")
+    st.write("**Șerloc Ro** a fost inspirat de tacticile agresive din mediul online – cum ar fi alertele false, reclamele înșelătoare și știrile senzaționaliste – care vizează adesea persoanele mai vulnerabile la noile tehnologii. Misiunea acestui asistent digital este de a oferi o **busolă** de încredere, ajutând utilizatorii să identifice textele manipulative al căror scop real este doar generarea de trafic sau profit.")
     st.divider()
     st.warning("**⚠️ Limitările Modelului**\n\nAplicația evaluează **stilul lingvistic** (senzaționalism, structura vocabularului) și nu **veridicitatea absolută a faptelor**.")
 
@@ -299,10 +299,10 @@ if st.session_state.arata_rezultate:
 
         with col1:
             if predictie == 0:
-                st.error("🚨🤥 **ALARMĂ: FAKE NEWS / MANIPULARE**")
+                st.error("⚠️ **STIL LINGVISTIC SUSPECT / SENZAȚIONALIST**")
                 st.metric(label="Nivel de certitudine", value=f"{probabilitati[0]:.2%}")
             else:
-                st.success("✅🛡️ **ȘTIRE VERIDICĂ / STIL JURNALISTIC**")
+                st.success("✅ **STIL JURNALISTIC STANDARD / NEUTRU**")
                 st.metric(label="Nivel de certitudine", value=f"{probabilitati[1]:.2%}")
 
 
