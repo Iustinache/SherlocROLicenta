@@ -9,8 +9,37 @@ import urllib.request
 import urllib.parse
 import xml.etree.ElementTree as ET
 
+import csv
+import os
+from datetime import datetime
+
+
+def salveaza_feedback(text, predictie, feedback):
+    fisier_csv = "feedback_colectat.csv"
+    fisier_exista = os.path.isfile(fisier_csv)
+
+    with open(fisier_csv, mode='a', newline='', encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if not fisier_exista:
+            writer.writerow(["Data_Ora", "Text_Analizat", "Predictie_Model", "Feedback_Utilizator"])
+
+        rezultat_text = "Fake News" if predictie == 0 else "Știre Reală"
+        writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), text, rezultat_text, feedback])
+
+def proceseaza_feedback(text, predictie, feedback):
+    salveaza_feedback(text, predictie, feedback)
+    st.session_state.feedback_dat = True
+    if feedback == "Corect":
+        st.toast("Mulțumim pentru validare! Datele au fost salvate.", icon="✅")
+    else:
+        st.toast("Mulțumim pentru corectură! Vom reevalua acest tipar.", icon="🙏")
+
 
 st.set_page_config(page_title="Șerloc Ro - Verifică Știrea", page_icon="🔎", layout="centered")
+if 'arata_rezultate' not in st.session_state:
+    st.session_state.arata_rezultate = False
+if 'feedback_dat' not in st.session_state:
+    st.session_state.feedback_dat = False
 
 if 'pwa_popup_inchis' not in st.session_state:
     st.session_state.pwa_popup_inchis = False
@@ -200,7 +229,7 @@ def incarca_resurse():
         "partid", "dan", "iohannis", "simion", "ciolacu", "georgescu", "lasconi","bolojan",
         "trump", "rusia", "ucraina", "moldova", "război", "militar", "european",
         "călin", "nicu", "nicușor", "george","georgescu", "aur", "acest", "aceasta", "aceste", "acel",
-        "acces", "foarte", "mai", "mult", "doar", "e", "s", "lui", "unei", "unui", "într", "ie", "zelenski", "ucraina", "rusia", "românia"
+        "acces", "foarte", "mai", "mult", "doar", "e", "s", "lui", "unei", "unui", "într", "ie", "zelenski", "ucraina", "rusia", "românia", "ucrainean", "rus", "rusesc", "occidental", "nato"
     }
     stop_words_ro = stop_words_ro.union(custom_stop_words)
 
@@ -250,33 +279,35 @@ text_input = st.text_area("Verifică știrea:",
 if st.button("Analizează Textul", type="primary"):
     if len(text_input.strip()) < 50:
         st.warning("Te rog să introduci un text mai lung (minim o propoziție) pentru o analiză corectă.")
+        st.session_state.arata_rezultate = False
     else:
-        with st.spinner('Analizăm tiparele lingvistice...'):
-            text_curatat = curatare_text_spacy(text_input)
+        st.session_state.arata_rezultate = True
+        st.session_state.feedback_dat = False
 
-            text_vectorizat = vectorizer.transform([text_curatat])
+if st.session_state.arata_rezultate:
+    with st.spinner('Analizăm tiparele lingvistice...'):
+        text_curatat = curatare_text_spacy(text_input)
+        text_vectorizat = vectorizer.transform([text_curatat])
 
-            predictie = model.predict(text_vectorizat)[0]
-            probabilitati = model.predict_proba(text_vectorizat)[0]
+        predictie = model.predict(text_vectorizat)[0]
+        probabilitati = model.predict_proba(text_vectorizat)[0]
 
-            st.markdown("---")
-            st.subheader("Rezultatul Analizei:")
+        st.markdown("---")
+        st.subheader("Rezultatul Analizei:")
 
-            col1, col2 = st.columns(2)
+        col1, col2 = st.columns(2)
 
-            #1=Adevărat, 0=Fals
-            with col1:
-                if predictie == 0:
-                    st.error("🚨🤥 **ALARMĂ: FAKE NEWS / MANIPULARE**")
-                    # probabilitati[0] este probabilitatea pentru clasa 0 (Fake)
-                    st.metric(label="Nivel de certitudine", value=f"{probabilitati[0]:.2%}")
-                else:
-                    st.success("✅🛡️ **ȘTIRE VERIDICĂ / STIL JURNALISTIC**")
-                    # probabilitati[1] este probabilitatea pentru clasa 1 (Real)
-                    st.metric(label="Nivel de certitudine", value=f"{probabilitati[1]:.2%}")
+        with col1:
+            if predictie == 0:
+                st.error("🚨🤥 **ALARMĂ: FAKE NEWS / MANIPULARE**")
+                st.metric(label="Nivel de certitudine", value=f"{probabilitati[0]:.2%}")
+            else:
+                st.success("✅🛡️ **ȘTIRE VERIDICĂ / STIL JURNALISTIC**")
+                st.metric(label="Nivel de certitudine", value=f"{probabilitati[1]:.2%}")
+
 
                 st.markdown("---")
-                st.subheader("📰 Vezi știrile reale despre subiect (Google News Live)")
+                st.subheader("📰 Verifică subiectul în surse oficiale")
 
                 text_curat = re.sub(r'[^\w\s]', '', text_input)
                 cuvinte_relevante = [cuv for cuv in text_curat.split() if len(cuv) > 3]
@@ -317,41 +348,54 @@ if st.button("Analizează Textul", type="primary"):
                         st.info("⚠️ Nu am putut interoga Google News în acest moment. Verifică conexiunea la internet.")
 
             # EXPLICABILITATE
-            with col2:
-                st.markdown("**Ce a influențat decizia?**")
+        with col2:
+            st.markdown("**Ce a influențat decizia?**")
 
-                # extragere cuvintele din text care sunt în vocabularul vectorizatorului
-                indici_cuvinte_gasite = text_vectorizat.nonzero()[1]
-                nume_features = vectorizer.get_feature_names_out()
-                coeficienti = model.coef_[0]
+            indici_cuvinte_gasite = text_vectorizat.nonzero()[1]
+            nume_features = vectorizer.get_feature_names_out()
+            coeficienti = model.coef_[0]
 
-                cuvinte_importante = []
-                for idx in indici_cuvinte_gasite:
-                    cuvant = nume_features[idx]
-                    coef = coeficienti[idx]
-                    cuvinte_importante.append({'Cuvânt': cuvant, 'Impact': coef})
+            cuvinte_importante = []
+            for idx in indici_cuvinte_gasite:
+                cuvant = nume_features[idx]
+                coef = coeficienti[idx]
+                cuvinte_importante.append({'Cuvânt': cuvant, 'Impact': coef})
 
-                if cuvinte_importante:
-                    df_explicativ = pd.DataFrame(cuvinte_importante)
-                    # sortare descrescător după impactul absolut pentru a lua cele mai puternice cuvinte
-                    df_explicativ['Absolut'] = df_explicativ['Impact'].abs()
-                    df_explicativ = df_explicativ.sort_values(by='Absolut', ascending=False).head(7)
-                    df_explicativ['Direcție'] = df_explicativ['Impact'].apply(
-                        lambda x: 'Știre Reală' if x > 0 else 'Fake News'
-                    )
+            if cuvinte_importante:
+                df_explicativ = pd.DataFrame(cuvinte_importante)
+                df_explicativ['Absolut'] = df_explicativ['Impact'].abs()
+                df_explicativ = df_explicativ.sort_values(by='Absolut', ascending=False).head(7)
+                df_explicativ['Direcție'] = df_explicativ['Impact'].apply(
+                    lambda x: 'Știre Reală' if x > 0 else 'Fake News'
+                )
 
-                    # graficul interactiv cu Altair
-                    grafic = alt.Chart(df_explicativ).mark_bar().encode(
-                        x=alt.X('Impact:Q', title='Pondere în decizie (Coeficient)'),
-                        y=alt.Y('Cuvânt:N', sort='-x', title=''),
-                        color=alt.Color('Direcție:N',
-                                        scale=alt.Scale(domain=['Știre Reală', 'Fake News'],
-                                                        range=['#2e7d32', '#d32f2f']),
-                                        legend=alt.Legend(title="Indică spre:")),
-                        tooltip=['Cuvânt', 'Impact', 'Direcție']
-                    ).properties(height=350)
+                grafic = alt.Chart(df_explicativ).mark_bar().encode(
+                    x=alt.X('Impact:Q', title='Pondere în decizie (Coeficient)'),
+                    y=alt.Y('Cuvânt:N', sort='-x', title=''),
+                    color=alt.Color('Direcție:N',
+                                    scale=alt.Scale(domain=['Știre Reală', 'Fake News'],
+                                                    range=['#2e7d32', '#d32f2f']),
+                                    legend=alt.Legend(title="Indică spre:")),
+                    tooltip=['Cuvânt', 'Impact', 'Direcție']
+                ).properties(height=350)
 
-                    st.altair_chart(grafic, width="stretch")
-                else:
-                    st.info("Modelul nu a găsit cuvinte cheie specifice în acest text scurt.")
+                st.altair_chart(grafic, width="stretch")
+            else:
+                st.info("Modelul nu a găsit cuvinte cheie specifice în acest text scurt.")
 
+
+
+        st.markdown("---")
+
+        if not st.session_state.feedback_dat:
+            st.markdown("**Ajută modelul să învețe!** Cum ți s-a părut această analiză?")
+            col_f1, col_f2, col_f3 = st.columns([0.4, 0.4, 0.2])
+
+            with col_f1:
+                st.button("👍 Corect", on_click=proceseaza_feedback, args=(text_input, predictie, "Corect"))
+
+            with col_f2:
+                st.button("👎 Greșit", on_click=proceseaza_feedback, args=(text_input, predictie, "Greșit"))
+
+        else:
+            st.success("✨ Mulțumim! Feedback-ul tău a fost înregistrat cu succes pentru acest text.")
