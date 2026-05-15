@@ -26,6 +26,7 @@ def salveaza_feedback(text, predictie, feedback):
         rezultat_text = "Fake News" if predictie == 0 else "Știre Reală"
         writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), text, rezultat_text, feedback])
 
+
 def proceseaza_feedback(text, predictie, feedback):
     salveaza_feedback(text, predictie, feedback)
     st.session_state.feedback_dat = True
@@ -210,7 +211,9 @@ def afiseaza_popup_mobil():
             st.query_params.clear()
             st.rerun()
 
+
 afiseaza_popup_mobil()
+
 
 @st.cache_resource
 def incarca_resurse():
@@ -226,10 +229,11 @@ def incarca_resurse():
         "declara", "face", "putea", "trebui", "potrivit", "conform", "foto", "video",
         "sursa", "citeste", "articol", "aici", "abonare", "newsletter", "parlament",
         "guvern", "presedinte", "președinte", "premier", "alegeri", "alegere", "electoral",
-        "partid", "dan", "iohannis", "simion", "ciolacu", "georgescu", "lasconi","bolojan",
+        "partid", "dan", "iohannis", "simion", "ciolacu", "georgescu", "lasconi", "bolojan",
         "trump", "rusia", "ucraina", "moldova", "război", "militar", "european",
-        "călin", "nicu", "nicușor", "george","georgescu", "aur", "acest", "aceasta", "aceste", "acel",
-        "acces", "foarte", "mai", "mult", "doar", "e", "s", "lui", "unei", "unui", "într", "ie", "zelenski", "ucraina", "rusia", "românia", "ucrainean", "rus", "rusesc", "occidental", "nato"
+        "călin", "nicu", "nicușor", "george", "georgescu", "aur", "acest", "aceasta", "aceste", "acel",
+        "acces", "foarte", "mai", "mult", "doar", "e", "s", "lui", "unei", "unui", "într", "ie", "zelenski", "ucraina",
+        "rusia", "românia", "ucrainean", "rus", "rusesc", "occidental", "nato", "iran"
     }
     stop_words_ro = stop_words_ro.union(custom_stop_words)
 
@@ -237,6 +241,7 @@ def incarca_resurse():
 
 
 nlp, model, vectorizer, stop_words_ro = incarca_resurse()
+
 
 def curatare_text_spacy(text):
     text = re.sub(r'Citește mai mult la:.*', '', text, flags=re.DOTALL)
@@ -250,8 +255,8 @@ def curatare_text_spacy(text):
     cuvinte_curate = [
         token.lemma_ for token in doc
         if token.text not in stop_words_ro
-        and token.lemma_ not in stop_words_ro
-        and not token.is_space
+           and token.lemma_ not in stop_words_ro
+           and not token.is_space
     ]
     return ' '.join(cuvinte_curate)
 
@@ -260,9 +265,12 @@ def curatare_text_spacy(text):
 
 @st.dialog("🔎 Despre Șerloc Ro")
 def afiseaza_despre():
-    st.write("**Șerloc Ro** a fost inspirat de tacticile agresive din mediul online – cum ar fi alertele false, reclamele înșelătoare și știrile senzaționaliste – care vizează adesea persoanele mai vulnerabile la noile tehnologii. Misiunea acestui asistent digital este de a oferi o **busolă** de încredere, ajutând utilizatorii să identifice textele manipulative al căror scop real este doar generarea de trafic sau profit.")
+    st.write(
+        "**Șerloc Ro** a fost inspirat de tacticile agresive din mediul online – cum ar fi alertele false, reclamele înșelătoare și știrile senzaționaliste – care vizează adesea persoanele mai vulnerabile la noile tehnologii. Misiunea acestui asistent digital este de a oferi o **busolă** de încredere, ajutând utilizatorii să identifice textele manipulative al căror scop real este doar generarea de trafic sau profit.")
     st.divider()
-    st.warning("**⚠️ Limitările Modelului**\n\nAplicația evaluează **stilul lingvistic** (senzaționalism, structura vocabularului) și nu **veridicitatea absolută a faptelor**.")
+    st.warning(
+        "**⚠️ Limitările Modelului**\n\nAplicația evaluează **stilul lingvistic** (senzaționalism, structura vocabularului) și nu **veridicitatea absolută a faptelor**.")
+
 
 st.title("🕵️‍♂️ Șerloc RO")
 
@@ -304,7 +312,6 @@ if st.session_state.arata_rezultate:
             else:
                 st.success("✅ **STIL JURNALISTIC STANDARD / NEUTRU**")
                 st.metric(label="Nivel de certitudine", value=f"{probabilitati[1]:.2%}")
-
 
                 st.markdown("---")
                 st.subheader("📰 Verifică subiectul în surse oficiale")
@@ -382,8 +389,6 @@ if st.session_state.arata_rezultate:
                 st.altair_chart(grafic, width="stretch")
             else:
                 st.info("Modelul nu a găsit cuvinte cheie specifice în acest text scurt.")
-
-
 
         st.markdown("---")
 
