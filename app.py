@@ -261,7 +261,7 @@ def curatare_text_spacy(text):
     return ' '.join(cuvinte_curate)
 
 
-# --- INTERFAȚA WEB ---
+# --- interfața web
 
 @st.dialog("🔎 Despre Șerloc Ro")
 def afiseaza_despre():
@@ -309,6 +309,48 @@ if st.session_state.arata_rezultate:
             if predictie == 0:
                 st.error("⚠️ **STIL LINGVISTIC SUSPECT / SENZAȚIONALIST**")
                 st.metric(label="Nivel de certitudine", value=f"{probabilitati[0]:.2%}")
+
+                st.markdown("---")
+                st.subheader("📰 Verifică subiectul în surse oficiale")
+
+                text_curat = re.sub(r'[^\w\s]', '', text_input)
+                cuvinte_relevante = [cuv for cuv in text_curat.split() if len(cuv) > 3]
+                fraza_cautare = " ".join(cuvinte_relevante[:5])
+
+                st.markdown(f"Interoghez baza de date Google News pentru: **«{fraza_cautare}»**...")
+
+                with st.spinner("Se preiau știrile oficiale..."):
+                    try:
+                        query_codificat = urllib.parse.quote(fraza_cautare)
+                        url_google_rss = f"https://news.google.com/rss/search?q={query_codificat}&hl=ro&gl=RO&ceid=RO:ro"
+
+                        # "deghizare" într-un browser normal ca să fie 100% safe
+                        req = urllib.request.Request(url_google_rss, headers={'User-Agent': 'Mozilla/5.0'})
+
+                        # citire și decodare XML-ul primit de la Google
+                        with urllib.request.urlopen(req) as response:
+                            xml_data = response.read()
+
+                        root = ET.fromstring(xml_data)
+
+                        # căutare toate știrile găsite și selectare top 3
+                        stiri_gasite = root.findall('.//item')[:3]
+
+                        if stiri_gasite:
+                            for stire in stiri_gasite:
+                                titlu = stire.find('title').text
+                                link = stire.find('link').text
+                                data_pub = stire.find('pubDate').text
+                                st.markdown(f"🔹 **[{titlu}]({link})**")
+                                # afișare data publicării tăind partea cu fusul orar pentru a arăta mai curat
+                                st.caption(f"🗓️ Publicat la: {data_pub[:-4]}")
+                        else:
+                            st.warning(
+                                "⚠️ Google News nu a găsit nicio știre oficială care să conțină aceste cuvinte. Indicator de **Fake News**!")
+
+                    except Exception as e:
+                        st.info("⚠️ Nu am putut interoga Google News în acest moment. Verifică conexiunea la internet.")
+
             else:
                 st.success("✅ **STIL JURNALISTIC STANDARD / NEUTRU**")
                 st.metric(label="Nivel de certitudine", value=f"{probabilitati[1]:.2%}")
@@ -354,7 +396,7 @@ if st.session_state.arata_rezultate:
                     except Exception as e:
                         st.info("⚠️ Nu am putut interoga Google News în acest moment. Verifică conexiunea la internet.")
 
-            # EXPLICABILITATE
+            # explicabilitate
         with col2:
             st.markdown("**Ce a influențat decizia?**")
 
