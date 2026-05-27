@@ -13,18 +13,30 @@ import csv
 import os
 from datetime import datetime
 
+import gspread
+from google.oauth2.service_account import Credentials
+
 
 def salveaza_feedback(text, predictie, feedback):
-    fisier_csv = "feedback_colectat.csv"
-    fisier_exista = os.path.isfile(fisier_csv)
+    try:
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive"
+        ]
 
-    with open(fisier_csv, mode='a', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f)
-        if not fisier_exista:
-            writer.writerow(["Data_Ora", "Text_Analizat", "Predictie_Model", "Feedback_Utilizator"])
+        info_cont = dict(st.secrets["gcp_service_account"])
+        info_cont["private_key"] = info_cont["private_key"].replace("\\n", "\n")
+        creds = Credentials.from_service_account_info(info_cont, scopes=scopes)
+        client = gspread.authorize(creds)
+
+        sheet = client.open_by_url(st.secrets["google_sheet_url"]).sheet1
 
         rezultat_text = "Fake News" if predictie == 0 else "Știre Reală"
-        writer.writerow([datetime.now().strftime("%Y-%m-%d %H:%M:%S"), text, rezultat_text, feedback])
+        data_ora = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        sheet.append_row([data_ora, text, rezultat_text, feedback])
+    except Exception as e:
+        pass
 
 
 def proceseaza_feedback(text, predictie, feedback):
@@ -48,7 +60,6 @@ if 'pwa_popup_inchis' not in st.session_state:
 
 def afiseaza_popup_mobil():
     if not st.session_state.pwa_popup_inchis:
-        # textul HTML rămâne aliniat la stânga pentru a evita formatarea Markdown tip "Cod"
         st.markdown("""
 <style>
 #pwa-modal-container {
@@ -204,7 +215,6 @@ def afiseaza_popup_mobil():
 </div>
 """, unsafe_allow_html=True)
 
-        # logica din Python pentru închiderea ferestrei
         query_params = st.query_params
         if query_params.get("inchide_pwa") == "true":
             st.session_state.pwa_popup_inchis = True
@@ -324,16 +334,13 @@ if st.session_state.arata_rezultate:
                         query_codificat = urllib.parse.quote(fraza_cautare)
                         url_google_rss = f"https://news.google.com/rss/search?q={query_codificat}&hl=ro&gl=RO&ceid=RO:ro"
 
-                        # "deghizare" într-un browser normal ca să fie 100% safe
                         req = urllib.request.Request(url_google_rss, headers={'User-Agent': 'Mozilla/5.0'})
 
-                        # citire și decodare XML-ul primit de la Google
                         with urllib.request.urlopen(req) as response:
                             xml_data = response.read()
 
                         root = ET.fromstring(xml_data)
 
-                        # căutare toate știrile găsite și selectare top 3
                         stiri_gasite = root.findall('.//item')[:3]
 
                         if stiri_gasite:
@@ -342,7 +349,6 @@ if st.session_state.arata_rezultate:
                                 link = stire.find('link').text
                                 data_pub = stire.find('pubDate').text
                                 st.markdown(f"🔹 **[{titlu}]({link})**")
-                                # afișare data publicării tăind partea cu fusul orar pentru a arăta mai curat
                                 st.caption(f"🗓️ Publicat la: {data_pub[:-4]}")
                         else:
                             st.warning(
@@ -369,16 +375,13 @@ if st.session_state.arata_rezultate:
                         query_codificat = urllib.parse.quote(fraza_cautare)
                         url_google_rss = f"https://news.google.com/rss/search?q={query_codificat}&hl=ro&gl=RO&ceid=RO:ro"
 
-                        # "deghizare" într-un browser normal ca să fie 100% safe
                         req = urllib.request.Request(url_google_rss, headers={'User-Agent': 'Mozilla/5.0'})
 
-                        # citire și decodare XML-ul primit de la Google
                         with urllib.request.urlopen(req) as response:
                             xml_data = response.read()
 
                         root = ET.fromstring(xml_data)
 
-                        # căutare toate știrile găsite și selectare top 3
                         stiri_gasite = root.findall('.//item')[:3]
 
                         if stiri_gasite:
