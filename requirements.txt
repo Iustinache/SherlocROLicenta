@@ -5,3 +5,5 @@ altair
 joblib
 spacy
 https://github.com/explosion/spacy-models/releases/download/ro_core_news_sm-3.8.0/ro_core_news_sm-3.8.0-py3-none-any.whl
+gspread
+google-auth
